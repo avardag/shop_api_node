@@ -2,11 +2,12 @@ const express = require('express')
 
 const app = express();
 
-// MW
-app.use((req, res, next)=>{
-  res.status(200).json({
-    message: 'Connected'
-  })
-})
+const productsRoutes = require("./api/routes/products")
+const ordersRoutes = require("./api/routes/orders")
+
+
+// ROUTES
+app.use("/products", productsRoutes)
+app.use("/orders", ordersRoutes)
 
 module.exports = app;
