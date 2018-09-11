@@ -1,11 +1,17 @@
+require('dotenv').config()
 const express = require("express");
 const morgan = require("morgan");
 const app = express();
 const bodyParser = require("body-parser");
-
+const mongoose = require('mongoose');
 //Route imports
 const productsRoutes = require("./api/routes/products");
 const ordersRoutes = require("./api/routes/orders");
+
+//MongoDB connection
+mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true })
+mongoose.set({"debug":true})
+
 
 app.use(morgan('dev'));
 app.use(bodyParser.urlencoded({extended: true}));
