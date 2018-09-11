@@ -7,13 +7,22 @@ const Product = require("../models/Products");
 
 router.get("/", (req, res, next) => {
   Product.find()
+    .select("name price _id") //which fields to show
     .exec()
-    .then(products => {
-      // if (products.length > 0) {
-      res.status(200).json({ products });
-      // } else {
-      //   res.status(404).json({message: "No entries found"})
-      // }
+    .then(docs => {
+      const response = {
+        count: docs.length,
+        products: docs.map(doc=>({
+          name: doc.name,
+          price: doc.price,
+          _id: doc._id,
+          request: {
+            type: "GET",
+            url: `/products/${doc._id}`
+          }
+        }))
+      }
+      res.status(200).json(response);
     })
     .catch(err => {
       console.log("err", err);
@@ -31,8 +40,16 @@ router.post("/", (req, res, next) => {
     .save()
     .then(result => {
       res.status(201).json({
-        message: "handling POST requests in /products",
-        createdProduct: result
+        message: "Successfully created product",
+        createdProduct: {
+          name: result.name,
+          price: result.price,
+          _id: result._id,
+          request: {
+            type: "POST",
+            url: `/products/${result._id}`
+          }
+        }
       });
     })
     .catch(err => {
@@ -44,11 +61,17 @@ router.post("/", (req, res, next) => {
 router.get("/:productId", (req, res, next) => {
   const id = req.params.productId;
   Product.findById(id)
+    .select("name price _id")
     .exec()
     .then(doc => {
-      console.log("doc", doc);
       if (doc) {
-        res.status(200).json(doc);
+        res.status(200).json({
+          product: doc,
+          request: {
+            type: "GET",
+            url: `/products/${doc._id}`
+          }
+        });
       } else {
         res.status(404).json({ message: "No entry for provided id" });
       }
@@ -67,9 +90,22 @@ router.patch("/:productId", (req, res, next) => {
   for (let key of Object.keys(req.body)) {
     updateOps[key] = req.body[key];
   }
-  Product.update({ _id: id }, { $set: updateOps })
+  Product.findOneAndUpdate({ _id: id }, { $set: updateOps }, {new:true})
     .exec()
-    .then(result => res.status(200).json(result))
+    .then(result => {
+      res.status(200).json({
+        message: "Successfully updated",
+        updatedProduct: {
+          _id: result._id,
+          name: result.name,
+          price: result.price
+        },
+        request: {
+          type: "PATCH",
+          url: `/products/${result._id}`
+        }
+      })
+    })
     .catch(err => res.status(500).json({ error: err }));
 });
 
@@ -77,7 +113,13 @@ router.delete("/:productId", (req, res, next) => {
   const id = req.params.productId;
   Product.remove({ _id: id })
     .exec()
-    .then(result => res.status(200).json(result))
+    .then(result => res.status(200).json({
+      message: "Successfully deleted",
+      request: {
+        type: "DELETE",
+        url: `/products/${id}`
+      }
+    }))
     .catch(err => res.status(500).json({ error: err }));
 });
 
