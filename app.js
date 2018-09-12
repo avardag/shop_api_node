@@ -7,9 +7,11 @@ const mongoose = require('mongoose');
 //Route imports
 const productsRoutes = require("./api/routes/products");
 const ordersRoutes = require("./api/routes/orders");
+const userRoutes = require("./api/routes/users");
 
 //MongoDB connection
 mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true })
+mongoose.set('useCreateIndex', true);
 mongoose.set({"debug":true})
 
 
@@ -35,6 +37,7 @@ app.use((req, res, next)=>{
 // ROUTES
 app.use("/products", productsRoutes);
 app.use("/orders", ordersRoutes);
+app.use("/users", userRoutes);
 
 // catch allroute / Error Handling
 app.use((req, res, next)=>{
