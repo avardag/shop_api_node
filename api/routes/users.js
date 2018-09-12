@@ -6,6 +6,7 @@ const bcrypt = require("bcrypt");
 const User = require("../models/User");
 
 //Routes
+//SIGNUP
 router.post("/signup", (req, res, next) => {
   //check if a user with passed email already exists
   User.find({email: req.body.email})
@@ -42,6 +43,31 @@ router.post("/signup", (req, res, next) => {
     })
 });
 
+//LOGIN
+router.post("/login", (req, res, next)=>{
+  User.findOne({email: req.body.email})
+    .exec()
+    .then(user=>{
+      if (!user) {
+        return res.status(401).json({message: "Auth failed"})
+      }
+      bcrypt.compare(req.body.password, user.password, (err, match)=>{
+        if (err) {
+          return res.status(401).json({message: "Auth failed"})
+        }else if (match) { //if passwords match
+          return res.status(200).json({message: "Successfuly loginned"})
+        }else{ // passwords dont match || any other case
+          return res.status(401).json({message: "Auth failed"})
+        }
+      })
+    })
+    .catch(err=>{
+      console.log('err', err);
+      res.status(500).json({error: err})
+    });
+})
+
+//DELETE
 router.delete("/:userId", (req, res, next)=>{
   User.remove({_id: req.params.userId})
     .exec()
