@@ -14,6 +14,7 @@ mongoose.set({"debug":true})
 
 
 app.use(morgan('dev'));
+app.use("/uploads", express.static("uploads")) // make images folder available for everyone
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 

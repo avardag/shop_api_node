@@ -1,27 +1,54 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
+const multer = require("multer"); //for image uploads
+
+//MULTER CONFIGS
+//where to store images & set name of stored file
+const imgStorage = multer.diskStorage({
+  destination: function(req, file, cb) {
+    cb(null, './uploads/'); //null for errs
+  },
+  filename: function(req, file, cb) {
+    //concat date with original name of file
+    cb(null, (new Date().toISOString() + file.originalname));
+  }
+});
+//filter image formats
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype === "image/jpeg" || file.mimetype === "image/png") {
+    cb(null, true); //null for errs, true for save
+  } else {
+    cb(null, false); //false for save
+  }
+};
+const upload = multer({
+  storage: imgStorage,
+  fileFilter: fileFilter,
+  limits: { fileSize: 1024 * 1024 * 3 } //3MB
+});
 
 // models imports
 const Product = require("../models/Products");
 
 router.get("/", (req, res, next) => {
   Product.find()
-    .select("name price _id") //which fields to show
+    .select("name price _id productImage") //which fields to show
     .exec()
     .then(docs => {
       const response = {
         count: docs.length,
-        products: docs.map(doc=>({
+        products: docs.map(doc => ({
           name: doc.name,
           price: doc.price,
           _id: doc._id,
+          productImage: doc.productImage,
           request: {
             type: "GET",
             url: `/products/${doc._id}`
           }
         }))
-      }
+      };
       res.status(200).json(response);
     })
     .catch(err => {
@@ -30,11 +57,14 @@ router.get("/", (req, res, next) => {
     });
 });
 
-router.post("/", (req, res, next) => {
+router.post("/", upload.single("productImage"), (req, res, next) => {
+  console.log(req.file);
+
   const product = new Product({
     _id: new mongoose.Types.ObjectId(),
     name: req.body.name,
-    price: req.body.price
+    price: req.body.price,
+    productImage: req.file.path //from multer
   });
   product
     .save()
@@ -45,6 +75,7 @@ router.post("/", (req, res, next) => {
           name: result.name,
           price: result.price,
           _id: result._id,
+          productImage: result.productImage,
           request: {
             type: "POST",
             url: `/products/${result._id}`
@@ -61,7 +92,7 @@ router.post("/", (req, res, next) => {
 router.get("/:productId", (req, res, next) => {
   const id = req.params.productId;
   Product.findById(id)
-    .select("name price _id")
+    .select("name price _id productImage")
     .exec()
     .then(doc => {
       if (doc) {
@@ -86,11 +117,11 @@ router.get("/:productId", (req, res, next) => {
 router.patch("/:productId", (req, res, next) => {
   const id = req.params.productId;
   //what fields to update?
-  const updateOps = {};//update options
+  const updateOps = {}; //update options
   for (let key of Object.keys(req.body)) {
     updateOps[key] = req.body[key];
   }
-  Product.findOneAndUpdate({ _id: id }, { $set: updateOps }, {new:true})
+  Product.findOneAndUpdate({ _id: id }, { $set: updateOps }, { new: true })
     .exec()
     .then(result => {
       res.status(200).json({
@@ -104,7 +135,7 @@ router.patch("/:productId", (req, res, next) => {
           type: "PATCH",
           url: `/products/${result._id}`
         }
-      })
+      });
     })
     .catch(err => res.status(500).json({ error: err }));
 });
@@ -113,13 +144,15 @@ router.delete("/:productId", (req, res, next) => {
   const id = req.params.productId;
   Product.remove({ _id: id })
     .exec()
-    .then(result => res.status(200).json({
-      message: "Successfully deleted",
-      request: {
-        type: "DELETE",
-        url: `/products/${id}`
-      }
-    }))
+    .then(result =>
+      res.status(200).json({
+        message: "Successfully deleted",
+        request: {
+          type: "DELETE",
+          url: `/products/${id}`
+        }
+      })
+    )
     .catch(err => res.status(500).json({ error: err }));
 });
 
