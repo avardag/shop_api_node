@@ -3,6 +3,9 @@ const router = express.Router();
 const mongoose = require("mongoose");
 const multer = require("multer"); //for image uploads
 
+//MW
+const checkAuth = require("../middleware/checkAuth");
+
 //MULTER CONFIGS
 //where to store images & set name of stored file
 const imgStorage = multer.diskStorage({
@@ -56,8 +59,8 @@ router.get("/", (req, res, next) => {
       res.status(500).json({ error: err });
     });
 });
-
-router.post("/", upload.single("productImage"), (req, res, next) => {
+//POST
+router.post("/", checkAuth, upload.single("productImage"), (req, res, next) => {
   console.log(req.file);
 
   const product = new Product({
@@ -114,7 +117,7 @@ router.get("/:productId", (req, res, next) => {
     });
 });
 
-router.patch("/:productId", (req, res, next) => {
+router.patch("/:productId", checkAuth, (req, res, next) => {
   const id = req.params.productId;
   //what fields to update?
   const updateOps = {}; //update options
@@ -140,7 +143,7 @@ router.patch("/:productId", (req, res, next) => {
     .catch(err => res.status(500).json({ error: err }));
 });
 
-router.delete("/:productId", (req, res, next) => {
+router.delete("/:productId", checkAuth, (req, res, next) => {
   const id = req.params.productId;
   Product.remove({ _id: id })
     .exec()
