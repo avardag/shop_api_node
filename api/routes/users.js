@@ -1,7 +1,9 @@
+require('dotenv').config()
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 const User = require("../models/User");
 
@@ -55,7 +57,19 @@ router.post("/login", (req, res, next)=>{
         if (err) {
           return res.status(401).json({message: "Auth failed"})
         }else if (match) { //if passwords match
-          return res.status(200).json({message: "Successfuly loginned"})
+          const token= jwt.sign(
+            {
+              email: user.email,
+              userId:user._id
+            },
+            process.env.JWT_KEY,
+            { expiresIn: "24h" }
+
+          )
+          return res.status(200).json({
+            message: "Successfuly loginned",
+            token: token
+          })
         }else{ // passwords dont match || any other case
           return res.status(401).json({message: "Auth failed"})
         }
